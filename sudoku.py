@@ -218,7 +218,8 @@ while run:
                 check_solve()
         if event.type == pygame.KEYDOWN:
             number = ''
-            left, top = clicked
+            if clicked:
+                left, top = clicked
             if event.unicode.isnumeric():
                 number = event.unicode
             if number >='0' and number <= '9':
