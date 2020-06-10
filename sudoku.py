@@ -212,7 +212,8 @@ while run:
             if solveButton.is_over(event.pos):
                 pygame.draw.rect(win, (255,255,255), (205, 905, 390, 75))
                 pygame.display.update()
-                solver()  
+                solver()
+		pygame.event.set_blocked(pygame.MOUSEBUTTONDOWN)
             elif checkButton.is_over(event.pos):
                 check_solve()
         if event.type == pygame.KEYDOWN:
