@@ -12,7 +12,9 @@ You can click SOLVE to visualize the solution.
 To run this, run sudoku.py with following command line arguements: 
 
   --model_directory = models/
+  
   --image = Your sample image path
+  
   --number = 3 
   
 So an example run will be : python sudoku.py --model_directory models/ --number 3 --image images/sudoku.jpg
