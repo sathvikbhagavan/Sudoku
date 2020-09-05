@@ -7,7 +7,7 @@ import argparse
 
 # Arguement Parser
 ap = argparse.ArgumentParser()
-ap.add_argument("-m", "--model_path", required=True,
+ap.add_argument("-m", "--model_directory", required=True,
 	help="path to trained digit classifier")
 ap.add_argument("-n", "--number", required=True,
 	help="number of trained digit classifier")
@@ -17,7 +17,7 @@ args = vars(ap.parse_args())
 
 
 # Getting the grid through ocr'ing the image 
-grid = get_grid.get_grid(args['image'], args['model_path'], int(args['number']))
+grid = get_grid.get_grid(args['image'], args['model_directory'], int(args['number']))
 
 
 # Variables
