@@ -1,24 +1,46 @@
 import pygame
 import numpy as np
 import time
+import get_grid
+import argparse
 
-#Puzzle
-grid = np.array([[5,3,0,0,7,0,0,0,0],
-                  [6,0,0,1,9,5,0,0,0],
-                  [0,9,8,0,0,0,0,6,0],
-                  [8,0,0,0,6,0,0,0,3],
-                  [4,0,0,8,0,3,0,0,1],
-                  [7,0,0,0,2,0,0,0,6],
-                  [0,6,0,0,0,0,2,8,0],
-                  [0,0,0,4,1,9,0,0,5],
-                  [0,0,0,0,8,0,0,7,9]])
 
-grid_copy = grid.copy()
+# Arguement Parser
+ap = argparse.ArgumentParser()
+ap.add_argument("-m", "--model_path", required=True,
+	help="path to trained digit classifier")
+ap.add_argument("-n", "--number", required=True,
+	help="number of trained digit classifier")
+ap.add_argument("-i", "--image", required=True,
+	help="path to input Sudoku puzzle image")
+args = vars(ap.parse_args())
+
+
+# Getting the grid through ocr'ing the image 
+grid = get_grid.get_grid(args['image'], args['model_path'], int(args['number']))
+
+
+# Variables
+SIZE = 81 
+OFFSET = 100
+HEIGHT = 9*SIZE + OFFSET
+WIDTH = 9*SIZE
+BLACK = pygame.Color('black')
+WHITE = pygame.Color('white')
+WIDTH_BUTTON = 100
+HEIGHT_BUTTON = 50
+
+
+# Puzzle is the array which is modified while solving by a player
+puzzle = grid.copy()
+
+
+# Solution is the array in which the solution is computed
 solution = grid.copy()
+
 
 #Button Class for making buttons
 class Button:
-    #Constructor 
     def __init__(self, color, x, y, width, height, text=''):
         self.color = color
         self.x = x
@@ -27,26 +49,24 @@ class Button:
         self.height = height
         self.text = text
 
-    #Drawing the button on the window
     def draw(self, win):
-        
         pygame.draw.rect(win, self.color, (self.x, self.y, self.width, self.height), 0)
-
         if self.text != '':
             font = pygame.font.SysFont('comicsans', 40)
-            text = font.render(self.text, 1, (255, 255, 255))
+            text = font.render(self.text, 1, WHITE)
             win.blit(text, (
                 self.x + (self.width / 2 - text.get_width() / 2), self.y + (self.height / 2 - text.get_height() / 2)))
     
-    #To check if the button is pressed or not 
-    def is_over(self, pos):
+    def is_pressed(self, pos):
         if self.x < pos[0] < self.x + self.width:
             if self.y < pos[1] < self.y + self.height:
                 return True
 
         return False
 
-#To check whether the given configuration of solution is right or not - used for solver/visualizer functions
+
+# To check whether the given configuration of solution is right or not 
+#               - used for solver/visualizer functions
 def check(x,y,n,sol):
     for i in range(9):
         if sol[x][i] == n:
@@ -54,8 +74,8 @@ def check(x,y,n,sol):
     for i in range(9):
         if sol[i][y] == n:
             return False
-    a = int(x/3)
-    b = int(y/3)
+    a = x//3
+    b = y//3
     startx = a*3
     starty = b*3
     for i in range(startx, startx+3):
@@ -65,7 +85,7 @@ def check(x,y,n,sol):
     return True
 
 
-#To find the solution beforehand and using it to validate user's solution
+# To find the solution beforehand and using it to validate player's solution
 flag_sol = False
 def solver_for_check():
     global solution
@@ -82,39 +102,40 @@ def solver_for_check():
                 return
     flag_sol = True
 
-#To check the user's solution with the correct solution
+
+# To check the user's solution with the correct solution
 def check_solve():
-    
-    pygame.draw.rect(win, (255,255,255), (205, 905, 390, 75))
+    pygame.draw.rect(win, WHITE, (3*SIZE, 9*SIZE+5, 3*SIZE, OFFSET))
     pygame.display.update()
     for i in range(9):
         for j in range(9):
-            if grid_copy[i][j] != 0 and grid_copy[i][j] != solution[i][j]:
-                    text = font.render('Wrong', 1, (0,0,0))
+            if puzzle[i][j] != 0 and puzzle[i][j] != solution[i][j]:
+                    text = font.render('Wrong', 1, BLACK)
                     textRect = text.get_rect()
-                    textRect.center = (450, 950)
+                    textRect.center = (WIDTH//2, WIDTH+50)
                     win.blit(text, textRect)
                     pygame.display.update()
                     return
     for i in range(9):
         for j in range(9):
-            if grid_copy[i][j] == 0:
-                text = font.render('Incomplete', 1, (0,0,0))
+            if puzzle[i][j] == 0:
+                text = font.render('Incomplete', 1, BLACK)
                 textRect = text.get_rect()
-                textRect.center = (450, 950)
+                textRect.center = (WIDTH//2, WIDTH+50)
                 win.blit(text, textRect)
                 pygame.display.update()
                 return
-    pygame.draw.rect(win, (255,255,255), (0, 980, 900, 75))
+    pygame.draw.rect(win, WHITE, (0, 980, 900, 75))
     pygame.display.update()
-    text = font.render('Correct', 1, (0,0,0))
+    text = font.render('Correct', 1, BLACK)
     textRect = text.get_rect()
-    textRect.center = (400, 950)
+    textRect.center = (WIDTH//2, WIDTH+50)
     win.blit(text, textRect)
     pygame.display.update()
     return
-                
-#Solver Function
+
+
+# Solver Function
 flag = False
 def solver():
     global flag
@@ -126,21 +147,21 @@ def solver():
                 for k in range(1,10):
                     if check(i,j,k,grid):
                         grid[i][j] = k
-                        text = font.render(str(grid[i][j]), 1, (0,0,0))
+                        text = font.render(str(grid[i][j]), 1, BLACK)
                         textRect = text.get_rect()
-                        textRect.center = (100*j+50,100*i+50)
-                        win.fill((255,255,255), textRect)
+                        textRect.center = (SIZE*j+SIZE//2,SIZE*i+SIZE//2)
+                        win.fill(WHITE, textRect)
                         win.blit(text, textRect)
-                        pygame.draw.rect(win, (0,255,0), (100*j+5, 100*i+5, 90, 90), 5)
+                        pygame.draw.rect(win, pygame.Color('green'), (SIZE*j+5, SIZE*i+5, SIZE-10, SIZE-10), 5)
                         pygame.display.update()
                         pygame.time.delay(2)
                         solver()
                         if not flag:
                             grid[i][j] = 0
-                            win.fill((255,255,255), textRect)
-                            text = font.render(str(grid[i][j]), 1, (0,0,0))
+                            win.fill(WHITE, textRect)
+                            text = font.render(str(grid[i][j]), 1, BLACK)
                             win.blit(text, textRect)
-                            pygame.draw.rect(win, (255,0,0), (100*j+5, 100*i+5, 90, 90), 5)
+                            pygame.draw.rect(win, pygame.Color('red'), (SIZE*j+5, SIZE*i+5, SIZE-10, SIZE-10), 5)
                             pygame.display.update()
                 return
             
@@ -148,48 +169,52 @@ def solver():
     print(grid)
     return
 
-#Setting up the game Window
+
+# Setting up the game Window
 pygame.init()
 pygame.display.list_modes()
-win = pygame.display.set_mode((900,1050))
+win = pygame.display.set_mode((WIDTH,HEIGHT))
 pygame.display.set_caption("Sudoku")
-win.fill((255,255,255))
+win.fill(WHITE)
 pygame.display.update()
 solver_for_check()
 
-#Setting up the grid
+
+# Setting up the grid
 for i in range(1,3):
-    pygame.draw.line(win, (0,0,0),(300*i,0),(300*i,900),3)
-    pygame.draw.line(win, (0,0,0),(0,300*i),(900,300*i),3)
+    pygame.draw.line(win, BLACK,(SIZE*3*i,0),(SIZE*3*i,WIDTH),3)
+    pygame.draw.line(win, BLACK,(0,SIZE*3*i),(WIDTH,SIZE*3*i),3)
 for i in range(1,9):
-	pygame.draw.line(win, (0,0,0),(i*100,0),(i*100,900),1)
-	pygame.draw.line(win, (0,0,0),(0,i*100),(900,i*100),1)
-pygame.draw.line(win, (0,0,0), (0,900), (900,900),3)
+	pygame.draw.line(win, BLACK,(i*SIZE,0),(i*SIZE,WIDTH),1)
+	pygame.draw.line(win, BLACK,(0,i*SIZE),(WIDTH,i*SIZE),1)
+pygame.draw.line(win, BLACK, (0,9*SIZE), (9*SIZE,9*SIZE),3)
 sudoku_blocks = []
 for i in range(9):
     for j in range(9):
-        s = Button((0,0,0), 100*j, 100*i, 100, 100, '')
+        s = Button(BLACK, SIZE*j, SIZE*i, SIZE, SIZE, '')
         sudoku_blocks.append(s)
 
-#Drawing the SOLVE  and CHECK button
-solveButton = Button((0,0,0), 700, 915, 100, 50, 'SOLVE')
+
+# Drawing the SOLVE  and CHECK button
+solveButton = Button(BLACK, SIZE*7, WIDTH+20, WIDTH_BUTTON, HEIGHT_BUTTON, 'SOLVE')
 solveButton.draw(win)
-checkButton = Button((0,0,0), 100, 915, 100, 50, 'CHECK')
+checkButton = Button(BLACK, SIZE*1, WIDTH+20, WIDTH_BUTTON, HEIGHT_BUTTON, 'CHECK')
 checkButton.draw(win)
 
-#Laying out the initial puzzle
+
+# Laying out the initial puzzle
 for i in range(9):
     for j in range(9):
         if grid[j][i] != 0:
             font = pygame.font.SysFont('comicsans', 60)
-            text = font.render(str(grid[j][i]), 1, (0,100,255))
+            text = font.render(str(grid[j][i]), 1, (0,0,255))
             textRect = text.get_rect()
-            textRect.center = (100*i + 50,100*j + 50)
+            textRect.center = (SIZE*i + SIZE//2,SIZE*j + SIZE//2)
             win.blit(text, textRect)
 pygame.display.update()
 
 
-#Pygame main loop
+# Pygame main loop
 clicked = ()
 run = True
 while run:
@@ -198,23 +223,23 @@ while run:
             run = False
         if event.type == pygame.MOUSEBUTTONDOWN:
             for s in sudoku_blocks:
-                if s.is_over(event.pos):
+                if s.is_pressed(event.pos):
                     if len(clicked)>0:
                         last_left, last_top = clicked
-                        pygame.draw.rect(win, (255,255,255), (100*last_left+5, 100*last_top+5, 90, 90),3)
+                        pygame.draw.rect(win, WHITE, (SIZE*last_left+5, SIZE*last_top+5, SIZE-10, SIZE-10),3)
                         pygame.display.update()
                         clicked = ()
                     x, y = event.pos
-                    left, top = int(x/100), int(y/100)
-                    pygame.draw.rect(win, (0,0,255), (100*left+5, 100*top+5, 90, 90),3)
+                    left, top = x//SIZE, y//SIZE
+                    pygame.draw.rect(win, (0,0,255), (SIZE*left+5, SIZE*top+5, SIZE-10, SIZE-10),3)
                     pygame.display.update()
                     clicked = (left, top)
-            if solveButton.is_over(event.pos):
-                pygame.draw.rect(win, (255,255,255), (205, 905, 390, 75))
+            if solveButton.is_pressed(event.pos):
+                pygame.draw.rect(win, WHITE, (WIDTH//3, WIDTH+5, 4*SIZE-10, OFFSET))
                 pygame.display.update()
                 solver()
-		pygame.event.set_blocked(pygame.MOUSEBUTTONDOWN)
-            elif checkButton.is_over(event.pos):
+                pygame.event.set_blocked(pygame.MOUSEBUTTONDOWN)  
+            elif checkButton.is_pressed(event.pos):
                 check_solve()
         if event.type == pygame.KEYDOWN:
             number = ''
@@ -224,17 +249,17 @@ while run:
                 number = event.unicode
             if number >='0' and number <= '9':
                 font = pygame.font.SysFont('comicsans', 60)
-                text = font.render(number, 1, (0,0,0))
+                text = font.render(number, 1, BLACK)
                 textRect = text.get_rect()
-                textRect.center = (100*left + 50,100*top + 50)
+                textRect.center = (SIZE*left + SIZE//2,SIZE*top + SIZE//2)
                 if grid[top][left] == 0:
                     if number == '0':
-                        grid_copy[top][left] = int(number)
-                        win.fill((255,255,255), textRect)
+                        puzzle[top][left] = int(number)
+                        win.fill(WHITE, textRect)
                         pygame.display.update()
                     else:
-                        grid_copy[top][left] = int(number) 
-                        win.fill((255,255,255), textRect)
+                        puzzle[top][left] = int(number) 
+                        win.fill(WHITE, textRect)
                         win.blit(text, textRect)
                         pygame.display.update()    
 pygame.quit()
