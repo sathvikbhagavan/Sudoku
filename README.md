@@ -11,10 +11,12 @@ You can click SOLVE to visualize the solution.
 
 To run this, run sudoku.py with following command line arguements: 
 
-  --model_directory = models/
+  --model_directory : directory where models are kept
   
-  --image = Your sample image path
+  --image : image path
   
-  --number = 3 
+  --number : number of ensemble models
   
-So an example run will be : python sudoku.py --model_directory models/ --number 3 --image images/sudoku.jpg
+  --debug : see the intermediate images (0/1)
+  
+So an example run will be : python sudoku.py --model_directory models/ --number 3 --image images/sudoku.jpg --debug 1
